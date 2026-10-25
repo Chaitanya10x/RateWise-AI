@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+!.env.example
+!.env.sample
+.expo/
+dist/
+web-build/
+build/
+coverage/
+.vision-headers.txt
+.vision-response.json
+.multipart-headers.txt
+.multipart-response.json

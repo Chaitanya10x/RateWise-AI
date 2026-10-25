@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "RateWise AI",
+    "slug": "ratewise-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "ratewiseai",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "RateWise AI uses the camera to scan product labels.",
+        "NSPhotoLibraryUsageDescription": "RateWise AI lets you choose product label images for analysis."
+      }
+    },
+    "android": {
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.ratewiseai"
+    },
+    "plugins": [
+      "expo-image-picker"
+    ]
+  }
+}
