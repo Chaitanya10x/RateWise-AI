@@ -11,6 +11,7 @@ import {
   Text,
   View,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -22,7 +23,7 @@ import { BrandTitle, GlassCard, HeaderIcon, PrimaryButton } from './components';
 import { colors } from './theme';
 import type { AnalysisResult, PickedImage } from './types';
 
-type Screen = 'splash' | 'home' | 'processing' | 'result';
+type Screen = 'splash' | 'home' | 'processing' | 'result' | 'info';
 
 const emptyResult: AnalysisResult = {
   analysisStatus: 'analyzed',
@@ -59,7 +60,8 @@ export default function App() {
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
       {screen === 'splash' && <SplashScreen />}
-      {screen === 'home' && <HomeScreen onPick={startAnalysis} />}
+      {screen === 'home' && <HomeScreen onPick={startAnalysis} onInfo={() => setScreen('info')} />}
+      {screen === 'info' && <InfoScreen onBack={() => setScreen('home')} />}
       {screen === 'processing' && image && (
         <ProcessingScreen
           image={image}
@@ -99,7 +101,7 @@ function SplashScreen() {
   );
 }
 
-function HomeScreen({ onPick }: { onPick: (image: PickedImage) => void }) {
+function HomeScreen({ onPick, onInfo }: { onPick: (image: PickedImage) => void; onInfo: () => void }) {
   const pick = async (source: 'camera' | 'gallery') => {
     try {
       if (source === 'camera' && Platform.OS === 'web') {
@@ -137,10 +139,6 @@ function HomeScreen({ onPick }: { onPick: (image: PickedImage) => void }) {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.homeHeader}>
-        <HeaderIcon name="menu" />
-        <HeaderIcon name="notifications-none" />
-      </View>
       <BrandTitle />
       <Text style={styles.tagline}>Scan. Rate. Decide.</Text>
       <View style={styles.homeCenter}>
@@ -161,7 +159,65 @@ function HomeScreen({ onPick }: { onPick: (image: PickedImage) => void }) {
           <PrimaryButton icon="image" label="Upload Image" filled={false} onPress={() => pick('gallery')} />
         </GlassCard>
       </View>
-      <BottomNav />
+      <BottomNav onInfo={onInfo} active="scan" />
+    </View>
+  );
+}
+
+function InfoScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.infoContent}>
+        <View style={styles.infoHeader}>
+          <HeaderIcon name="arrow-back-ios" onPress={onBack} />
+          <Text style={styles.infoTitle}>About RateWise AI</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <GlassCard contentStyle={styles.infoCard}>
+          <Text style={styles.infoLead}>Know What You Buy. Make Smarter Choices.</Text>
+          <InfoParagraph>Product packages contain ingredient lists, nutritional information, and other details that can help consumers make informed decisions. However, understanding these details and deciding whether a product is a good choice can be confusing.</InfoParagraph>
+          <InfoParagraph>In India, consumers often have to interpret product labels themselves. RateWise AI aims to make this process simpler.</InfoParagraph>
+          <InfoHeading>Why RateWise AI?</InfoHeading>
+          <InfoParagraph>RateWise AI is an AI-powered product decision assistant designed to help users understand product labels and make more informed purchasing decisions.</InfoParagraph>
+          <InfoHeading>How It Works</InfoHeading>
+          <InfoList items={[
+            'Scan — Take a photo or upload an image of a product label.',
+            'Analyze — AI examines the visible ingredients, nutritional information, expiry date, and other relevant details.',
+            'Get a Rating — Receive a star rating and a short explanation.',
+            "Decide — Get a BUY, CONSIDER, or DON'T BUY recommendation based on the information detected.",
+          ]} />
+          <InfoHeading>What RateWise AI Helps You Understand</InfoHeading>
+          <InfoList items={[
+            'Ingredients listed on the package.',
+            'Nutritional information, when available.',
+            'Expiry information, when visible and readable.',
+            'Potential concerns identified from the available product information.',
+            'A simple rating and recommendation to support purchasing decisions.',
+          ]} />
+          <InfoHeading>Our Mission</InfoHeading>
+          <InfoParagraph>Our mission is to make product information easier to understand for everyone in India, helping consumers make more informed choices without having to interpret every label themselves.</InfoParagraph>
+          <Text style={styles.infoSignature}>RateWise AI — Scan. Rate. Decide.</Text>
+          <InfoHeading>Important Disclaimer</InfoHeading>
+          <InfoParagraph>AI-generated ratings are estimates based on information detected from product labels. The AI may miss details or make mistakes. Ratings do not guarantee that a product is safe or unsafe for every individual. Always verify the original packaging and consult a qualified professional for health-related concerns.</InfoParagraph>
+        </GlassCard>
+      </ScrollView>
+      <BottomNav onInfo={() => {}} active="info" />
+    </View>
+  );
+}
+
+function InfoHeading({ children }: { children: string }) {
+  return <Text style={styles.infoHeading}>{children}</Text>;
+}
+
+function InfoParagraph({ children }: { children: string }) {
+  return <Text style={styles.infoParagraph}>{children}</Text>;
+}
+
+function InfoList({ items }: { items: string[] }) {
+  return (
+    <View style={styles.infoList}>
+      {items.map((item) => <Text key={item} style={styles.infoListItem}>• {item}</Text>)}
     </View>
   );
 }
@@ -335,12 +391,17 @@ function ResultScreen({ result, onBack }: { result: AnalysisResult; onBack: () =
   );
 }
 
-function BottomNav() {
+function BottomNav({ onInfo, active }: { onInfo: () => void; active: 'scan' | 'info' }) {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 600;
+
   return (
-    <GlassCard contentStyle={styles.navCard}>
-      <NavItem icon="home" label="Scan" active />
-      <NavItem icon="bar-chart" label="Analyze" />
-      <NavItem icon="info-outline" label="Info" />
+    <GlassCard contentStyle={StyleSheet.flatten([styles.navCard, isMobile ? styles.navCardMobile : styles.navCardDesktop])}>
+      <NavItem icon="home" label="Scan" active={active === 'scan'} />
+      <Pressable onPress={onInfo} style={styles.navItem}>
+        <MaterialIcons name="info-outline" color={active === 'info' ? colors.violet : colors.ink} size={25} />
+        <Text style={[styles.navLabel, { color: active === 'info' ? colors.violet : colors.ink, fontWeight: active === 'info' ? '800' : '600' }]}>Info</Text>
+      </Pressable>
     </GlassCard>
   );
 }
@@ -560,11 +621,74 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 16,
   },
-  navCard: {
+  infoContent: {
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  infoHeader: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 28,
-    paddingVertical: 14,
+    marginBottom: 14,
+  },
+  infoTitle: {
+    color: colors.ink,
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  infoCard: {
+    paddingHorizontal: 20,
+    paddingVertical: 22,
+  },
+  infoLead: {
+    color: colors.deepViolet,
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 28,
+    marginBottom: 12,
+  },
+  infoHeading: {
+    color: colors.ink,
+    fontSize: 17,
+    fontWeight: '900',
+    marginTop: 20,
+    marginBottom: 6,
+  },
+  infoParagraph: {
+    color: colors.muted,
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  infoList: {
+    marginTop: 4,
+  },
+  infoListItem: {
+    color: colors.muted,
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: 7,
+  },
+  infoSignature: {
+    color: colors.deepViolet,
+    fontSize: 16,
+    fontWeight: '900',
+    marginTop: 22,
+  },
+  navCard: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  navCardDesktop: {
+    columnGap: 48,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  navCardMobile: {
+    columnGap: 32,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   navItem: {
     alignItems: 'center',
